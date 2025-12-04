@@ -42,14 +42,42 @@ helm install elasticsearch elastic/elasticsearch \
   --set esJavaOpts="-Xms256m -Xmx256m" \
   --set imageTag="8.15.5"
 ```
-## 3) Verification for Elasticsearch using port-forwarding
+### Verification for Elasticsearch using port-forwarding
 ```bash
 kubectl port-forward svc/elasticsearch-master 9200:9200 -n elastic
 ```
-open a new terminal;
+open a new terminal and send a curl request ;
 ```bash
 curl --insecure -u elastic:MyDevPassword! https://localhost:9200
 ```
 
-- Add a simple Ingress example for Kibana (with TLS).
-- Replace the current file in the repo with this README.
+## 4) Install Kibana
+
+```bash
+helm install kibana elastic/kibana \
+  --namespace elastic \
+  --version 8.5.1 \
+  --set imageTag="8.5.1" \
+  --set elasticsearchHosts="https://elasticsearch-master:9200" \
+  --set elasticsearchUsername="elastic" \
+  --set elasticsearchPassword="MyDevPassword!" \
+  --set elasticsearchCertificateSecret="elasticsearch-master-certs" \
+  --set resources.requests.cpu="100m" \
+  --set resources.requests.memory="256Mi" \
+```
+
+
+### Create a NodePort service to expose Kibana externally.
+
+ ```bash
+ kubectl create service nodeport kibana-external \
+  --tcp=5601:5601 \
+  --node-port=30007
+
+
+kubectl patch service kibana-external -p '{"spec": {"selector": {"app": "kibana"}}}'
+ ```
+
+### Accessing Kibana
+To access Kibana, open the following URL in your browser: http://nodeip:30007
+
